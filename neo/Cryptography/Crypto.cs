@@ -33,7 +33,7 @@ namespace Neo.Cryptography
             }))
             {
                 return ecdsa.SignData(message, HashAlgorithmName.SHA256);            
-                }
+            }
         }
 
         public bool VerifySignature(byte[] message, byte[] signature, byte[] pubkey)
