@@ -59,9 +59,6 @@ namespace Neo.Wallets
                 SaveStoredData("MasterKey", masterKey.AesEncrypt(passwordKey, iv));
                 SaveStoredData("Version", new[] { Version.Major, Version.Minor, Version.Build, Version.Revision }.Select(p => BitConverter.GetBytes(p)).SelectMany(p => p).ToArray());
                 SaveStoredData("Height", BitConverter.GetBytes(current_height));
-#if NET461
-                ProtectedMemory.Protect(masterKey, MemoryProtectionScope.SameProcess);
-#endif
             }
             else
             {
@@ -70,9 +67,6 @@ namespace Neo.Wallets
                     throw new CryptographicException();
                 this.iv = LoadStoredData("IV");
                 this.masterKey = LoadStoredData("MasterKey").AesDecrypt(passwordKey, iv);
-#if NET461
-                ProtectedMemory.Protect(masterKey, MemoryProtectionScope.SameProcess);
-#endif
                 this.keys = LoadKeyPairs().ToDictionary(p => p.PublicKeyHash);
                 this.contracts = LoadContracts().ToDictionary(p => p.ScriptHash);
                 this.watchOnly = new HashSet<UInt160>(LoadWatchOnly());
@@ -132,9 +126,6 @@ namespace Neo.Wallets
         {
             if (!VerifyPassword(password_old)) return false;
             byte[] passwordKey = password_new.ToAesKey();
-#if NET461
-            using (new ProtectedMemoryContext(masterKey, MemoryProtectionScope.SameProcess))
-#endif
             {
                 try
                 {
@@ -208,9 +199,6 @@ namespace Neo.Wallets
         {
             if (encryptedPrivateKey == null) throw new ArgumentNullException(nameof(encryptedPrivateKey));
             if (encryptedPrivateKey.Length != 96) throw new ArgumentException();
-#if NET461
-            using (new ProtectedMemoryContext(masterKey, MemoryProtectionScope.SameProcess))
-#endif
             {
                 return encryptedPrivateKey.AesDecrypt(masterKey, iv);
             }
@@ -254,9 +242,6 @@ namespace Neo.Wallets
 
         protected byte[] EncryptPrivateKey(byte[] decryptedPrivateKey)
         {
-#if NET461
-            using (new ProtectedMemoryContext(masterKey, MemoryProtectionScope.SameProcess))
-#endif
             {
                 return decryptedPrivateKey.AesEncrypt(masterKey, iv);
             }
@@ -453,11 +438,7 @@ namespace Neo.Wallets
             byte[] privateKey;
             using (ECDsa ecdsa = cert.GetECDsaPrivateKey())
             {
-#if NET461
-                privateKey = ((ECDsaCng)ecdsa).Key.Export(CngKeyBlobFormat.EccPrivateBlob);
-#else
                 privateKey = ecdsa.ExportParameters(true).D;
-#endif
             }
             KeyPair key = CreateKey(privateKey);
             Array.Clear(privateKey, 0, privateKey.Length);
