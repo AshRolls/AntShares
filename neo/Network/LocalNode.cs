@@ -26,7 +26,7 @@ namespace Neo.Network
         public static event EventHandler<IInventory> InventoryReceived;
 
         public const uint ProtocolVersion = 0;
-        private const int ConnectedMax = 10;
+        private const int ConnectedMax = 11;
         private const int UnconnectedMax = 1000;
         public const int MemoryPoolSize = 30000;
 
@@ -248,7 +248,8 @@ namespace Neo.Network
             while (!cancellationTokenSource.IsCancellationRequested)
             {
                 int connectedCount = connectedPeers.Count;
-                int unconnectedCount = unconnectedPeers.Count;            
+                int unconnectedCount = unconnectedPeers.Count;
+                int disconnectCounter = 0;                
                 if (connectedCount < ConnectedMax)
                 {
                     Task[] tasks = { };
@@ -280,6 +281,28 @@ namespace Neo.Network
                     catch (OperationCanceledException)
                     {
                         break;
+                    }
+                }
+                else // we are up to max connections, lets slowly disconnect nodes to ensure that the overall network maintains a robust level of interconnectedness
+                {
+                    disconnectCounter++;
+                    if (disconnectCounter >= 60) // five minutes
+                    {
+                        RemoteNode node;
+                        lock (connectedPeers)
+                        {
+                            node = connectedPeers.First();
+                        }
+                        Task t = Task.Run(() => node.Disconnect(false));
+                        try
+                        {
+                            t.Wait(cancellationTokenSource.Token);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            break;
+                        }
+                        disconnectCounter = 0;
                     }
                 }
 
