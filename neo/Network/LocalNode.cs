@@ -83,7 +83,7 @@ namespace Neo.Network
             Blockchain.PersistCompleted += Blockchain_PersistCompleted;
         }
 
-        private async void AcceptPeers()
+        private async Task AcceptPeers()
         {
 #if !NET47
             //There is a bug in .NET Core 2.0 that blocks async method which returns void.
@@ -248,7 +248,7 @@ namespace Neo.Network
             while (!cancellationTokenSource.IsCancellationRequested)
             {
                 int connectedCount = connectedPeers.Count;
-                int unconnectedCount = unconnectedPeers.Count;
+                int unconnectedCount = unconnectedPeers.Count;            
                 if (connectedCount < ConnectedMax)
                 {
                     Task[] tasks = { };
@@ -282,12 +282,14 @@ namespace Neo.Network
                         break;
                     }
                 }
+
                 for (int i = 0; i < 50 && !cancellationTokenSource.IsCancellationRequested; i++)
                 {
                     Thread.Sleep(100);
                 }
             }
         }
+        
 
         public static bool ContainsTransaction(UInt256 hash)
         {

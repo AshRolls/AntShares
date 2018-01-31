@@ -383,7 +383,7 @@ namespace Neo.Network
 
         protected abstract Task<bool> SendMessageAsync(Message message);
 
-        internal async void StartProtocol()
+        internal async Task StartProtocol()
         {
 #if !NET47
             //There is a bug in .NET Core 2.0 that blocks async method which returns void.
@@ -487,7 +487,7 @@ namespace Neo.Network
             }
         }
 
-        private async void StartSendLoop()
+        private async Task StartSendLoop()
         {
 #if !NET47
             //There is a bug in .NET Core 2.0 that blocks async method which returns void.
