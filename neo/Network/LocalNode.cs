@@ -245,20 +245,32 @@ namespace Neo.Network
 
         private void ConnectToPeersLoop()
         {
+            Random r = new Random();
             while (!cancellationTokenSource.IsCancellationRequested)
             {
                 int connectedCount = connectedPeers.Count;
                 int unconnectedCount = unconnectedPeers.Count;
-                int disconnectCounter = 0;                
+                int disconnectCounter = 0;    
+                
                 if (connectedCount < ConnectedMax)
                 {
                     Task[] tasks = { };
                     if (unconnectedCount > 0)
                     {
-                        IPEndPoint[] endpoints;
+                        ICollection<IPEndPoint> endpoints = new List<IPEndPoint>();
                         lock (unconnectedPeers)
-                        {
-                            endpoints = unconnectedPeers.Take(ConnectedMax - connectedCount).ToArray();
+                        {                           
+                            int n;
+                            ICollection<int> alreadySelected = new List<int>();
+                            for (int i=0; i<ConnectedMax-connectedCount; i++)
+                            {
+                                n = r.Next(unconnectedPeers.Count);
+                                if (!alreadySelected.Contains(n))
+                                {
+                                    alreadySelected.Add(n);
+                                    endpoints.Add(unconnectedPeers.ElementAt(n));
+                                }
+                            }
                         }
                         tasks = endpoints.Select(p => ConnectToPeerAsync(p)).ToArray();
                     }
@@ -291,7 +303,8 @@ namespace Neo.Network
                         RemoteNode node;
                         lock (connectedPeers)
                         {
-                            node = connectedPeers.First();
+                            int n = r.Next(connectedPeers.Count);
+                            node = connectedPeers.ElementAt(n);
                         }
                         Task t = Task.Run(() => node.Disconnect(false));
                         try
